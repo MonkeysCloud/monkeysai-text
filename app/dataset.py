@@ -2,14 +2,11 @@ import torch
 from torch.utils.data import Dataset
 from app.tokenizer import SimpleTokenizer
 
+import pandas as pd, torch
 class TextDataset(Dataset):
-    """
-    Loads lines from a text file and turns them into (input, target) ID tensors.
-    """
-    def __init__(self, path: str, seq_len: int = 128):
-        # read your corpus
-        with open(path, "r", encoding="utf-8") as f:
-            lines = [l.strip() for l in f if l.strip()]
+    def __init__(self, parquet_path="services/text/data/latest.parquet", seq_len=128):
+        df = pd.read_parquet(parquet_path, columns=["text"])
+        lines = df["text"].tolist()
 
         # build a tokenizer on-the-fly
         self.tokenizer = SimpleTokenizer(lines)

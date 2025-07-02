@@ -7,11 +7,24 @@ authors = ["MonkeysLegion AI Team"]
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python  = "^3.11"
 fastapi = "^0.111"
-uvicorn = {extras = ["standard"], version = "^0.30"}
-torch = "^2.7"
-# training-only deps but light enough to include
-# (no GPU-specific libs here)
+uvicorn = { extras = ["standard"], version = "^0.30" }
+torch   = "^2.7"
+
+[tool.poetry.group.crawl.dependencies]
+scrapy            = "^2.11"
+trafilatura       = "^1.8"
+readability-lxml  = "^0.8"
+beautifulsoup4    = "^4.12"
+python-slugify    = "^8.0"
+pandas            = "^2.2"
+pyarrow           = "^20"
+requests          = "^2.32"
+tenacity          = "^9"
+
+[tool.poetry.group.train.dependencies]
+pytorch-lightning = "^2.4"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2"

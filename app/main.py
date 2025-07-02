@@ -6,7 +6,12 @@ from pydantic import BaseModel, Field
 
 # 1) Load or build tokenizer & dataset
 # TextDataset builds SimpleTokenizer internally
-ds = TextDataset(path="data/wiki.txt", seq_len=128)
+# point at the Parquet feed you already wrote:
+parquet_path = "services/text/data/snapshot.parquet"
+if not os.path.isfile(parquet_path):
+    raise FileNotFoundError(f"Couldn’t find {parquet_path}")
+
+ds = TextDataset(parquet_path, 128)
 tokenizer = ds.tokenizer
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -15,10 +20,11 @@ from .models import TransformerConfig, TransformerLanguageModel
 cfg = TransformerConfig(
     vocab_size=len(tokenizer.token2id),
     max_seq_len=128,
-    d_model=768,
-    n_heads=12,
-    num_layers=8,
-    d_ff=3072,
+    # bump up model size:
+    d_model=1024,
+    n_heads=16,
+    num_layers=12,
+    d_ff=4096,
     dropout=0.1
 )
 

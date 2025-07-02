@@ -14,31 +14,45 @@ from app.tokenizer import SimpleTokenizer
 
 # ────────────────────────────────────────────────────────────
 def main():
-    # 1) Configuration
-    # Instantiate tokenizer and config with dynamic vocab size
-    ds = TextDataset(path="data/wiki.txt", seq_len=128)
+    # 1) Configuration using our crawled pages
+    import pandas as pd
+
+    # load the scraped texts from Parquet
+    df = pd.read_parquet("services/text/data/snapshot.parquet")
+
+    # ─ use the Parquet you already wrote ─
+    parquet_path = "services/text/data/snapshot.parquet"
+    if not os.path.isfile(parquet_path):
+        raise FileNotFoundError(f"Expected Parquet at {parquet_path}")
+    # feed that directly into TextDataset
+    ds = TextDataset(parquet_path, 128)
+
     tokenizer = ds.tokenizer
-    cfg = TransformerConfig(vocab_size=len(tokenizer.token2id),
-                            max_seq_len=128,
-                            d_model=768,
-                            n_heads=12,
-                            num_layers=8,
-                            d_ff=3072,
-                            dropout=0.1)
+    # ─── scale up model to ~140 M parameters ───
+    cfg = TransformerConfig(
+        # vocab_size=len(tokenizer.token2id),
+        vocab_size=16000,
+        max_seq_len=256,
+        d_model=1024,  # hidden size
+        n_heads=16,    # number of attention heads
+        num_layers=12, # number of Transformer layers
+        d_ff=4096,    # feed-forward layer size
+        dropout=0.1,  # dropout rate
+    )
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     # 2) Model instantiation
     model = TransformerLanguageModel(cfg).to(DEVICE)
 
     # 3) DataLoader
-    dl = DataLoader(ds, batch_size=32, shuffle=True)
+    dl = DataLoader(ds, batch_size=64, shuffle=True)
 
     # 4) Optimizer & loss (ignore PAD=0)
     opt     = torch.optim.AdamW(model.parameters(), lr=3e-4)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=cfg.pad_token_id)
 
     # 5) Training loop
-    epochs = 20  # increase number of epochs for better learning
+    epochs = 50  # increase number of epochs for better learning
     for epoch in range(1, epochs + 1):
         tot = 0.0
         t0 = time.time()
