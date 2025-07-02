@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# Seed Redis list 'discover:start_urls' with a diverse set of sites
+
+urls=(
+  # ── Marketing / SaaS ───────────────
+  "https://apple.com"
+  "https://airbnb.com"
+  "https://stripe.com"
+  "https://slack.com"
+  "https://zoom.us"
+  "https://dropbox.com"
+  "https://spotify.com"
+  "https://netflix.com"
+  "https://adobe.com"
+  "https://figma.com"
+  "https://notion.so"
+  "https://asana.com"
+  "https://monday.com"
+  "https://salesforce.com"
+  "https://zendesk.com"
+  "https://atlassian.com"
+  "https://basecamp.com"
+  "https://mailchimp.com"
+  "https://hubspot.com"
+  "https://zapier.com"
+  "https://trello.com"
+  "https://calendly.com"
+  "https://intercom.com"
+  "https://segment.com"
+
+  # ── Developer Docs & APIs ─────────
+  "https://docs.python.org/3/"
+  "https://developer.mozilla.org/"
+  "https://docs.oracle.com/en/"
+  "https://learn.microsoft.com/docs"
+  "https://go.dev/doc/"
+  "https://docs.ruby-lang.org/en/"
+  "https://docs.php.net"
+  "https://nodejs.org/api/"
+  "https://docs.djangoproject.com/en/stable/"
+  "https://spring.io/docs"
+  "https://laravel.com/docs"
+  "https://nextjs.org/docs"
+  "https://react.dev/learn"
+  "https://angular.io/docs"
+  "https://doc.rust-lang.org/book/"
+  "https://tensorflow.org/api_docs"
+  "https://pytorch.org/docs/stable"
+  "https://kubernetes.io/docs/"
+  "https://docs.docker.com/"
+  "https://developer.hashicorp.com/terraform/docs"
+  "https://aws.amazon.com/documentation/"
+  "https://cloud.google.com/docs/"
+  "https://azure.microsoft.com/en-us/resources/documentation/"
+  "https://cloudflare.com/docs/"
+  "https://firebase.google.com/docs/"
+  "https://supabase.com/docs"
+  "https://stripe.com/docs"
+  "https://docs.github.com"
+  "https://readthedocs.io"
+
+  # ── Tech Blogs & Tutorials ────────
+  "https://dev.to/"
+  "https://medium.com/"
+  "https://hackernoon.com/"
+  "https://freecodecamp.org/news/"
+  "https://css-tricks.com/"
+  "https://smashingmagazine.com/"
+  "https://scotch.io/"
+  "https://realpython.com/"
+  "https://towardsdatascience.com/"
+  "https://engineering.fb.com/"
+  "https://eng.uber.com/"
+  "https://engineering.atspotify.com/"
+  "https://netflixtechblog.com/"
+
+  # ── News & Journalism ─────────────
+  "https://techcrunch.com/"
+  "https://theverge.com/"
+  "https://wired.com/"
+  "https://arstechnica.com/"
+  "https://bbc.com/news/"
+  "https://nytimes.com/"
+  "https://reuters.com/technology"
+  "https://bloomberg.com/technology"
+  "https://theguardian.com/technology"
+  "https://cnbc.com/technology"
+
+  # ── E-commerce & Product Pages ───
+  "https://amazon.com/"
+  "https://etsy.com/"
+  "https://shopify.com/"
+  "https://ebay.com/"
+  "https://nike.com/"
+  "https://adidas.com/"
+  "https://bestbuy.com/"
+  "https://walmart.com/"
+  "https://target.com/"
+  "https://costco.com/"
+  "https://homedepot.com/"
+
+  # ── Forums / Q&A ──────────────────
+  "https://stackoverflow.com/questions"
+  "https://news.ycombinator.com/"
+  "https://reddit.com/r/programming/"
+
+  # ── Open-Source READMEs ───────────
+  "https://github.com/facebook/react"
+  "https://github.com/vuejs/vue"
+  "https://github.com/tensorflow/tensorflow"
+  "https://github.com/kubernetes/kubernetes"
+  "https://github.com/redis/redis"
+
+  # ── Vertical Niches ───────────────
+  "https://healthline.com/"
+  "https://webmd.com/"
+  "https://khanacademy.org/"
+  "https://britannica.com/"
+  "https://npr.org/"
+  "https://nationalgeographic.com/"
+
+  # ── Non-English Samples ───────────
+  "https://lemonde.fr/"
+  "https://spiegel.de/"
+  "https://elpais.com/"
+  "https://asahi.com/"
+  "https://handelsblatt.com/"
+)
+
+# Push all URLs in one go
+redis-cli RPUSH discover:start_urls "${urls[@]}"
+
+echo "Seeded discover:start_urls with ${#urls[@]} URLs"

@@ -1,25 +1,29 @@
+from scrapy_redis.spiders import RedisSpider
 import scrapy
 from urllib.parse import urlparse
 
-class DocsSpider(scrapy.Spider):
-    name = "docs"
-    allowed_domains = ["wikipedia.org", "docs.python.org"]
-    start_urls = [
-        "https://en.wikipedia.org/wiki/Content_management_system",
-        "https://docs.python.org/3/library/asyncio.html",
-    ]
+class DomainDiscoverySpider(RedisSpider):
+    name      = "discover"
+    redis_key = "discover:start_urls"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # persistent set across requests in this process
+        self.seen_domains = set()
 
     def parse(self, response):
-        # emit the cleaned page text
-        paragraphs = response.css("p::text").getall()
-        text = " ".join(p.strip() for p in paragraphs if p.strip())
+        # yield the page text, etc…
         yield {
             "url": response.url,
-            "text": text,
+            "text": " ".join(response.css("p::text").getall()),
         }
-        # follow in-domain links
+
         for href in response.css("a::attr(href)").getall():
             abs_url = response.urljoin(href)
-            dom = urlparse(abs_url).netloc
-            if any(d in dom for d in self.allowed_domains):
-                yield scrapy.Request(abs_url, callback=self.parse)
+            dom     = urlparse(abs_url).netloc.lower()
+            # if domain brand new, schedule its homepage
+            if dom not in self.seen_domains:
+                self.seen_domains.add(dom)
+                # start with its root, or follow this URL directly
+                start_url = f"https://{dom}/"
+                yield scrapy.Request(start_url, callback=self.parse)
