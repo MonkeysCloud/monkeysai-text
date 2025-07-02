@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "monkeysai-text"
+version = "0.1.0"
+description = "Scratch-built Transformer + FastAPI wrapper."
+authors = ["MonkeysLegion AI Team"]
+
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111"
+uvicorn = {extras = ["standard"], version = "^0.30"}
+torch = "^2.7"
+# training-only deps but light enough to include
+# (no GPU-specific libs here)
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2"

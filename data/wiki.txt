@@ -1,0 +1,86 @@
+A database index speeds up read queries by maintaining a separate lookup structure for keys.
+MonkeysCMS stores rich-text blocks as JSON so editors can reorder content without HTML knowledge.
+The Panama Canal uses a system of locks to lift ships 26 meters above sea level.
+HTTPS encrypts traffic end to end, preventing man-in-the-middle attacks on public Wi-Fi networks.
+Git branches create isolated timelines so multiple developers can work in parallel.
+Capuchin monkeys wash sandy fruit in river water before eating.
+A full-node in Bitcoin validates every block since the genesis block without trusting third parties.
+PyTorch’s autograd engine builds a dynamic computation graph at runtime.
+Content Delivery Networks replicate static assets to edge servers in over one hundred cities.
+An ORM maps relational tables to objects, simplifying database access in high-level languages.
+Mistral-7B is a dense transformer that fits in 14 GB of GPU memory when loaded in 4-bit.
+Sentiment analysis labels text as positive, negative, or neutral using supervised machine learning.
+A JWT contains Base64-encoded header, payload, and signature segments separated by dots.
+Google’s BERT model introduced bidirectional attention and improved state-of-the-art on GLUE.
+Terraform uses declarative HCL files to describe cloud infrastructure as version-controlled code.
+The Hubble Space Telescope orbits roughly 540 km above Earth, completing a circuit every 97 minutes.
+FastAPI derives OpenAPI schemas from Python type hints, enabling instant API documentation.
+The Eiffel Tower was constructed for the 1889 World’s Fair and stands 324 meters tall.
+Unit tests give developers confidence that code refactors do not break existing functionality.
+Redis can act as a message broker using its native Pub/Sub channels.
+MongoDB stores documents in BSON, a binary representation of JSON with additional data types.
+A random-forest classifier aggregates the predictions of many decision trees to reduce variance.
+Vue.js uses a virtual DOM and reactive data binding to build interactive web interfaces.
+Capybaras are the largest living rodents and are native to South America.
+Kubernetes schedules containers onto nodes based on resource requests and affinity rules.
+TLS certificates are signed by certificate authorities to establish trust on the public Internet.
+A convolutional neural network extracts spatial features and dominates image recognition tasks.
+Docker layers cache identical file system changes to accelerate subsequent builds.
+The Gutenberg Bible was the first major book printed using mass-produced movable metal type.
+Lighthouse audits web pages for performance, accessibility, and best practices in Chrome DevTools.
+An ISBN uniquely identifies a specific edition of a commercial book.
+The SHA-256 hash algorithm outputs a fixed 32-byte digest regardless of input length.
+Edge computing processes data near the source, reducing latency for IoT devices.
+MySQL’s InnoDB engine supports ACID transactions and row-level locking.
+An SSL handshake negotiates cipher suites and exchanges keys before encrypted data flows.
+Server-side rendering improves first-paint time and SEO by delivering pre-rendered HTML.
+The Apollo Guidance Computer had only 64 KB of memory yet flew humans to the Moon.
+Quantum computing leverages qubits that can exist in superposition to solve select problems faster.
+A neural language model predicts the probability distribution of the next token in a sequence.
+React’s useEffect hook runs side-effects after component render cycles.
+A CDN purge invalidates outdated content from edge caches worldwide.
+PostgreSQL supports full-text search with indexes on tsvector columns.
+SHA-1 collisions were publicly demonstrated by Google researchers in 2017.
+Python’s asyncio library implements cooperative multitasking with event loops and coroutines.
+JPEG compression uses discrete cosine transform to reduce spatial redundancy in images.
+SQLite stores an entire relational database in a single cross-platform file.
+A capacitor stores energy in an electric field between two conductive plates.
+Euler’s identity links five fundamental mathematical constants in a single equation.
+CI pipelines can build Docker images, run tests, and push successful builds to production.
+The Andes mountain range extends about 7,000 kilometers along South America’s western edge.
+TypeScript adds optional static typing to JavaScript, catching errors at compile time.
+A RESTful API uses standard HTTP verbs like GET, POST, PUT, and DELETE.
+The Event Loop in JavaScript handles asynchronous callbacks in a single-threaded environment.
+Venus rotates in the opposite direction to most planets, resulting in a retrograde day.
+GraphQL allows clients to request precisely the data fields they need in one request.
+NAND flash memory is the basis for solid-state drives and USB sticks.
+Bananas are botanically berries, while strawberries are not.
+The SHA-3 family is based on the Keccak sponge construction.
+S3 buckets are private by default, but misconfigured ACLs can expose data publicly.
+A load balancer distributes incoming network traffic across multiple backend servers.
+IPv6 expands the address space to 3.4 × 10³⁸ unique addresses.
+The Unix epoch began at 00:00:00 UTC on 1 January 1970.
+LZ77 compression replaces repeated byte sequences with back-references to earlier data.
+OAuth 2.0 allows third-party apps to obtain limited access to HTTP services on behalf of users.
+Machine translation converts text from one natural language to another automatically.
+JPEG2000 uses wavelet compression and supports lossless modes unlike baseline JPEG.
+WebAssembly runs near-native code in browsers for compute-heavy tasks.
+Content Security Policy headers mitigate cross-site-scripting by restricting resource origins.
+A denormalised database schema can improve read performance at the cost of duplication.
+Gzip compression reduces HTML, CSS, and JS payload sizes over the network.
+RSA encryption relies on the computational difficulty of factoring large semiprime numbers.
+Cron expressions define recurring schedules down to the minute.
+Kafka stores ordered, immutable event logs that consumers read at their own pace.
+A Fibonacci sequence starts with 0 and 1, with each subsequent number being the sum of the two before it.
+Container orchestration automates deployment, scaling, and management of containerised applications.
+Breadcrumb navigation helps users understand the hierarchy of a website.
+A Bloom filter tests set membership with a configurable false-positive probability.
+HTTP/3 uses QUIC over UDP to reduce latency and head-of-line blocking.
+LATEX typesets complex mathematical formulas with precise control over layout.
+An S-curve graph often models technology adoption rates over time.
+The Doppler effect shifts the frequency of waves relative to an observer moving toward or away from the source.
+Lorem ipsum filler text helps designers visualise typographic layout before real content is ready.
+A UUID version 4 is generated from random numbers and is statistically unique.
+GeoJSON encodes geographic features like points, lines, and polygons in JSON.
+Simian primates typically have color vision, aiding fruit selection in dense jungles.
+The Turing machine is a mathematical abstraction that formalises algorithmic computation.
