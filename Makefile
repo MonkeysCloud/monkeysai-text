@@ -1,16 +1,21 @@
-.PHONY: crawl parquet train serve
+.PHONY: crawl-big parquet train serve
 
-crawl:
+# ───────────────────────────────────────────────────────────────
+crawl-big:
+	# 48-hour, unlimited-item scrape
 	cd data_crawl && \
-	poetry run scrapy crawl docs \
-	-s JOBDIR=.check \
-	-L INFO \
-	-o ../crawl/run_$(shell date +%F_%H%M).jl
+	poetry run scrapy crawl discover \
+	  -s JOBDIR=.check \
+	  -L INFO \
+	  -s CLOSESPIDER_ITEMCOUNT=0 \
+	  -s CLOSESPIDER_TIMEOUT=172800 \
+	  -o ../crawl/run_$(shell date +%F_%H%M).jl
 
+# ───────────────────────────────────────────────────────────────
 parquet:
 	mkdir -p services/text/data
 	poetry run python scripts/jl_to_parquet.py \
-	$(shell ls crawl/run_*.jl | tail -1)
+	  $(shell ls crawl/run_*.jl | tail -1)
 
 train:
 	poetry run python -m app.train

@@ -1,9 +1,9 @@
 """
-Production-grade training loop for MonkeysAI-Text
+Production‑grade training loop for MonkeysAI‑Text
 Run with:  poetry run python -m app.train
 Assumptions:
-  • Large cleaned corpus (≥10 GB) in services/text/data/snapshot.parquet
-  • Byte-Level BPE tokenizer already trained & saved in services/text/data/
+  • Large cleaned corpus (≥10 GB) in services/text/data/snapshot.parquet
+  • Byte‑Level BPE tokenizer already trained & saved in services/text/data/
   • CUDA or MPS GPU available; falls back to CPU
 """
 import os
@@ -14,17 +14,17 @@ from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.cuda.amp import GradScaler, autocast
 
-from app.models import TransformerConfig, TransformerLanguageModel
-from app.dataset import TextDataset
+from .models import TransformerConfig, TransformerLanguageModel
+from .dataset import TextDataset
 
 
 # ─────────────────────────────────────────────────────────────────
 BATCH_SIZE        = 64          # per gradient step
 GRAD_ACCUM_STEPS  = 4           # effective batch = 64 × 4 = 256
 SEQ_LEN           = 256
-TOTAL_EPOCHS      = 3           # full-corpus passes; adjust as corpus grows
+TOTAL_EPOCHS      = 3           # full‑corpus passes; adjust as corpus grows
 LR                = 3e-4        # peak LR
-WARMUP_STEPS      = 1_000       # linear warm-up before cosine decay
+WARMUP_STEPS      = 1_000       # linear warm‑up before cosine decay
 CHECKPOINT_DIR    = "checkpoints"
 
 
