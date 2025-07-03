@@ -1,104 +1,65 @@
 # Scrapy settings for monkeys_crawl project
+# ─────────────────────────────────────────────────────────────────────────────
+# Documentation:
+#   https://docs.scrapy.org/en/latest/topics/settings.html
 #
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+# This file keeps **all** project-wide settings in one place.  Values that we
+# tuned for large-scale distributed crawling are gathered near the bottom under
+# “Networking / AutoThrottle / Logging”.
 
 BOT_NAME = "monkeys_crawl"
 
 SPIDER_MODULES = ["monkeys_crawl.spiders"]
 NEWSPIDER_MODULE = "monkeys_crawl.spiders"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Core crawl politeness / scope
+# ---------------------------------------------------------------------------
+DEPTH_LIMIT = 3                  # don’t wander infinitely
+ROBOTSTXT_OBEY = True            # respect robots.txt
+CONCURRENT_REQUESTS = 32         # global concurrency
+DOWNLOAD_DELAY = 0.2             # 200 ms between same-host requests
 
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "monkeys_crawl (+http://www.yourdomain.com)"
-DEPTH_LIMIT = 3
-# Obey robots.txt rules
-ROBOTSTXT_OBEY = True
-
-# Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 32
-
-# Configure a delay for requests for the same website (default: 0)
-# See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
-# See also autothrottle settings and docs
-DOWNLOAD_DELAY = 0.2
-# The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
-#CONCURRENT_REQUESTS_PER_IP = 16
-
-# Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
-
-# Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
-
-# Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-#}
-
-# Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    "monkeys_crawl.middlewares.MonkeysCrawlSpiderMiddleware": 543,
-#}
-
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "monkeys_crawl.middlewares.MonkeysCrawlDownloaderMiddleware": 543,
-#}
-
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-#}
-
-# Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipelines
+# ---------------------------------------------------------------------------
 ITEM_PIPELINES = {
-    "monkeys_crawl.pipelines.CleanPipeline": 300,   # <- exact path + class name
+    "monkeys_crawl.pipelines.CleanPipeline": 300,
 }
-
 
 FEEDS = {
     "run_%(time)s.jl": {"format": "jsonlines", "encoding": "utf8"},
 }
 
-# Enable and configure the AutoThrottle extension (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
+# ─────────────────────────────────────────────────────────────────────────────
+# AutoThrottle
+# ---------------------------------------------------------------------------
 AUTOTHROTTLE_ENABLED = True
-# The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
-# The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
-# The average number of requests Scrapy should be sending in parallel to
-# each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
-# Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG = False
+AUTOTHROTTLE_START_DELAY = 0.1       # seconds
+AUTOTHROTTLE_MAX_DELAY   = 3         # seconds
+AUTOTHROTTLE_TARGET_CONCURRENCY = 8.0
 
-# Enable and configure HTTP caching (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+# ─────────────────────────────────────────────────────────────────────────────
+# Networking & retry
+# ---------------------------------------------------------------------------
+DOWNLOAD_TIMEOUT   = 60              # fail request after 60 s
+RETRY_ENABLED      = True
+RETRY_TIMES        = 2               # +1 original = max 3 attempts
+RETRY_HTTP_CODES   = [500, 502, 503, 504, 522, 524, 408]
+DOWNLOAD_MAXSIZE   = 6 * 1024 * 1024   # 6 MB per response cap
 
-# Set settings whose default value is deprecated to a future-proof value
+# ─────────────────────────────────────────────────────────────────────────────
+# Scrapy-Redis (distributed queue)
+# ---------------------------------------------------------------------------
+SCHEDULER        = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+REDIS_URL        = "redis://localhost:6379"
+SCHEDULER_PERSIST = True
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Misc / future-proof
+# ---------------------------------------------------------------------------
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
-
-# Scrapy-Redis settings
-SCHEDULER          = "scrapy_redis.scheduler.Scheduler"
-DUPEFILTER_CLASS   = "scrapy_redis.dupefilter.RFPDupeFilter"
-REDIS_URL          = "redis://localhost:6379"
-SCHEDULER_PERSIST  = True
+LOG_LEVEL = "INFO"                 # keep stack-traces out of INFO logs
