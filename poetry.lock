@@ -2568,7 +2568,7 @@ version = "2025.2"
 description = "World timezone definitions, modern and historical"
 optional = false
 python-versions = "*"
-groups = ["crawl"]
+groups = ["main", "crawl"]
 files = [
     {file = "pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00"},
     {file = "pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3"},
@@ -3867,4 +3867,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "9e6b29b68d9b0f45239f2161f9f0278e202a1d29a1d206e1ab2c0d55e70ef2ab"
+content-hash = "d341da2f09a5a7fa8386ef3ecbc696c6bcab0bcf259b3515ae3ec7c9202ba3ee"
