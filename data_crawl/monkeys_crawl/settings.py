@@ -15,7 +15,7 @@ NEWSPIDER_MODULE = "monkeys_crawl.spiders"
 # ─────────────────────────────────────────────────────────────────────────────
 # Core crawl politeness / scope
 # ---------------------------------------------------------------------------
-DEPTH_LIMIT = 3                  # don’t wander infinitely
+DEPTH_LIMIT = 5                  # don’t wander infinitely
 ROBOTSTXT_OBEY = True            # respect robots.txt
 CONCURRENT_REQUESTS = 32         # global concurrency
 DOWNLOAD_DELAY = 0.2             # 200 ms between same-host requests
@@ -63,3 +63,7 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 LOG_LEVEL = "INFO"                 # keep stack-traces out of INFO logs
+
+# Close after 48 h
+CLOSESPIDER_TIMEOUT = 172800          # 48 h in seconds
+SCHEDULER_IDLE_BEFORE_CLOSE = 600     # 10-min idle window
