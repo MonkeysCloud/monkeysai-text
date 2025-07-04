@@ -1,133 +1,618 @@
 #!/usr/bin/env bash
-# Seed Redis list 'discover:start_urls' with a diverse set of sites
+# Seed Redis list “discover:start_urls” with a large, diverse corpus.
+# -------------------------------------------------------------------
+REDIS_KEY="discover:start_urls"
 
-urls=(
-  # ── Marketing / SaaS ───────────────
-  "https://apple.com"
-  "https://airbnb.com"
-  "https://stripe.com"
-  "https://slack.com"
-  "https://zoom.us"
-  "https://dropbox.com"
-  "https://spotify.com"
-  "https://netflix.com"
-  "https://adobe.com"
-  "https://figma.com"
-  "https://notion.so"
-  "https://asana.com"
-  "https://monday.com"
-  "https://salesforce.com"
-  "https://zendesk.com"
-  "https://atlassian.com"
-  "https://basecamp.com"
-  "https://mailchimp.com"
-  "https://hubspot.com"
-  "https://zapier.com"
-  "https://trello.com"
-  "https://calendly.com"
-  "https://intercom.com"
-  "https://segment.com"
+# Bulk-push via redis-cli --pipe  (fast & atomic)
+{
+  echo "*$(grep -cv '^#' "$0")"      # array length for RPUSH
+  echo "\$4"                         # "RPUSH"
+  echo "RPUSH"
+  echo "\$${#REDIS_KEY}"
+  echo "$REDIS_KEY"
 
-  # ── Developer Docs & APIs ─────────
-  "https://docs.python.org/3/"
-  "https://developer.mozilla.org/"
-  "https://docs.oracle.com/en/"
-  "https://learn.microsoft.com/docs"
-  "https://go.dev/doc/"
-  "https://docs.ruby-lang.org/en/"
-  "https://docs.php.net"
-  "https://nodejs.org/api/"
-  "https://docs.djangoproject.com/en/stable/"
-  "https://spring.io/docs"
-  "https://laravel.com/docs"
-  "https://nextjs.org/docs"
-  "https://react.dev/learn"
-  "https://angular.io/docs"
-  "https://doc.rust-lang.org/book/"
-  "https://tensorflow.org/api_docs"
-  "https://pytorch.org/docs/stable"
-  "https://kubernetes.io/docs/"
-  "https://docs.docker.com/"
-  "https://developer.hashicorp.com/terraform/docs"
-  "https://aws.amazon.com/documentation/"
-  "https://cloud.google.com/docs/"
-  "https://azure.microsoft.com/en-us/resources/documentation/"
-  "https://cloudflare.com/docs/"
-  "https://firebase.google.com/docs/"
-  "https://supabase.com/docs"
-  "https://stripe.com/docs"
-  "https://docs.github.com"
-  "https://readthedocs.io"
+#──────────────────────────────────────────────
+#  ▼▼  START-URL LIST  (remove or add freely) ▼▼
+#──────────────────────────────────────────────
+# --- Core docs / APIs ---
+https://docs.python.org/3/
+https://developer.mozilla.org/
+https://go.dev/doc/
+https://kubernetes.io/docs/
+https://docs.docker.com/
+https://pytorch.org/docs/stable/
+https://tensorflow.org/api_docs
+https://nodejs.org/api/
+https://react.dev/learn
+https://nextjs.org/docs
+https://angular.io/docs
+https://spring.io/docs
+https://laravel.com/docs
+https://developer.hashicorp.com/terraform/docs
+https://aws.amazon.com/documentation/
+https://cloud.google.com/docs/
+https://azure.microsoft.com/en-us/resources/documentation/
+https://cloudflare.com/docs/
+https://firebase.google.com/docs/
+https://supabase.com/docs
+https://stripe.com/docs
+https://docs.github.com
+https://learn.microsoft.com/docs
+https://docs.oracle.com/en/
+https://doc.rust-lang.org/book/
+https://docs.php.net
+https://docs.ruby-lang.org/en/
+https://docs.djangoproject.com/en/stable/
+https://readthedocs.io/
+# --- Tech blogs / engineering ---
+https://dev.to/
+https://medium.com/
+https://hackernoon.com/
+https://freecodecamp.org/news/
+https://css-tricks.com/
+https://smashingmagazine.com/
+https://realpython.com/
+https://towardsdatascience.com/
+https://engineering.fb.com/
+https://eng.uber.com/
+https://engineering.atspotify.com/
+https://netflixtechblog.com/
+https://blog.cloudflare.com/
+https://discord.com/blog
+https://about.linkedin.com/pulse
+# --- SaaS / product docs ---
+https://apple.com/
+https://airbnb.com/
+https://stripe.com/
+https://slack.com/
+https://zoom.us/
+https://dropbox.com/
+https://spotify.com/
+https://netflix.com/
+https://adobe.com/
+https://figma.com/
+https://notion.so/
+https://asana.com/
+https://monday.com/
+https://salesforce.com/
+https://zendesk.com/
+https://atlassian.com/
+https://basecamp.com/
+https://hubspot.com/
+https://zapier.com/
+https://mailchimp.com/
+https://trello.com/
+https://calendly.com/
+https://intercom.com/
+https://segment.com/
+# --- News / journalism ---
+https://news.ycombinator.com/
+https://techcrunch.com/
+https://theverge.com/
+https://wired.com/
+https://arstechnica.com/
+https://bbc.com/news/
+https://nytimes.com/
+https://reuters.com/
+https://bloomberg.com/
+https://theguardian.com/
+https://cnbc.com/technology
+https://washingtonpost.com/
+https://ft.com/
+https://economist.com/
+https://aljazeera.com/
+https://apnews.com/
+# --- Research / academia ---
+https://arxiv.org/
+https://nature.com/
+https://science.org/
+https://ieee.org/
+https://acm.org/
+https://nasa.gov/
+https://esa.int/
+https://nih.gov/
+https://who.int/
+https://data.gov/
+https://data.europa.eu/
+https://opendata.cityofnewyork.us/
+# --- Universities ---
+https://mit.edu/
+https://stanford.edu/
+https://harvard.edu/
+https://ox.ac.uk/
+https://cam.ac.uk/
+https://ethz.ch/
+https://cmu.edu/
+https://berkeley.edu/
+https://ucla.edu/
+https://nus.edu.sg/
+https://tsinghua.edu.cn/
+# --- E-commerce / product pages ---
+https://amazon.com/
+https://etsy.com/
+https://shopify.com/
+https://ebay.com/
+https://nike.com/
+https://adidas.com/
+https://bestbuy.com/
+https://walmart.com/
+https://target.com/
+https://costco.com/
+https://homedepot.com/
+# --- Forums / Q&A / OSS hubs ---
+https://stackoverflow.com/questions
+https://reddit.com/r/programming/
+https://github.com/facebook/react
+https://github.com/vuejs/vue
+https://github.com/tensorflow/tensorflow
+https://github.com/kubernetes/kubernetes
+https://github.com/redis/redis
+# --- Health / education / reference ---
+https://healthline.com/
+https://webmd.com/
+https://khanacademy.org/
+https://britannica.com/
+https://npr.org/
+https://nationalgeographic.com/
+# --- Non-English news / portals ---
+https://lemonde.fr/
+https://spiegel.de/
+https://elpais.com/
+https://asahi.com/
+https://handelsblatt.com/
+https://xinhuanet.com/
+https://globo.com/
+https://eluniversal.com.mx/
+https://corriere.it/
+https://lefigaro.fr/
+https://welt.de/
+https://clarin.com/
+https://abc.net.au/news
+# --- Government / open data ---
+https://usa.gov/
+https://gov.uk/
+https://canada.ca/en.html
+https://australia.gov.au/
+https://europa.eu/
+https://india.gov.in/
+https://data.gov.sg/
+# --- Misc high-content ---
+https://wikipedia.org/
+https://wikidata.org/
+https://openstreetmap.org/
+https://archive.org/
+https://stackoverflow.blog/
+https://producthunt.com/
+https://yahoo.com/
+https://duckduckgo.com/
+https://spotify.design/
+https://unsplash.com/
+#──────────────────────────────────────────────
+# --- Cloud / AI / Dev platforms -----------------------------------
+https://openai.com/
+https://huggingface.co/docs
+https://vertex.ai/
+https://coreweave.com/
+https://replicate.com/docs
+https://cloud.ibm.com/docs
+https://oraclecloud.com/
+https://digitalocean.com/docs/
+https://linode.com/docs/
+https://cloud.tencent.com/document
+https://cloud.aliyun.com/document
+https://cloud.vmware.com/
+https://cloud.sap.com/documentation
+https://cloud.baidu.com/doc
+https://fastapi.tiangolo.com/
+https://grpc.io/docs/
+https://deno.com/manual
+https://bun.sh/docs
+https://vitejs.dev/guide
+https://astro.build/
+https://svelte.dev/docs
+https://solidjs.com/docs
+https://flutter.dev/docs
+https://dart.dev/guides
+https://bazel.build/
+https://jekyllrb.com/docs/
+https://gatsbyjs.com/docs/
+https://hugo.readthedocs.io/
+https://helm.sh/docs/
+https://prometheus.io/docs/
+https://grafana.com/docs/
+https://opentelemetry.io/docs/
+https://clickhouse.com/docs/
+https://vector.dev/docs/
+https://pydantic.dev/latest/
+https://sqlmodel.tiangolo.com/
+https://litestream.io/
+https://supabase.com/blog/
+https://planetscale.com/docs
+https://mongodb.com/docs/
+https://neon.tech/docs
+https://redis.io/docs/latest/
+https://rabbitmq.com/documentation.html
+https://kafka.apache.org/documentation/
+https://spark.apache.org/docs/
+https://flink.apache.org/what-is-flink.html
+https://ray.io/docs
+https://mlflow.org/docs/
+https://airbyte.com/docs/
+https://dagster.io/docs
+https://prefect.io/docs/
+https://kubeflow.org/docs/
+https://airflow.apache.org/docs/
+https://tableau.com/learn
+https://lookerstudio.google.com/
+https://superset.apache.org/docs/
 
-  # ── Tech Blogs & Tutorials ────────
-  "https://dev.to/"
-  "https://medium.com/"
-  "https://hackernoon.com/"
-  "https://freecodecamp.org/news/"
-  "https://css-tricks.com/"
-  "https://smashingmagazine.com/"
-  "https://scotch.io/"
-  "https://realpython.com/"
-  "https://towardsdatascience.com/"
-  "https://engineering.fb.com/"
-  "https://eng.uber.com/"
-  "https://engineering.atspotify.com/"
-  "https://netflixtechblog.com/"
+# --- Hardware / semiconductor ------------------------------------
+https://nvidia.com/en-us/data-center/
+https://intel.com/content/www/us/en/developer/topic-technology/
+https://amd.com/en/developer
+https://qualcomm.com/research
+https://arm.com/architecture
+https://broadcom.com/support/documentation
+https://micron.com/support
+https://marvell.com/support/
+https://ti.com/documentation
+https://nxp.com/docs
+https://st.com/content/st_com/en/support/technical-documentation.html
+https://analog.com/en/design-center.html
 
-  # ── News & Journalism ─────────────
-  "https://techcrunch.com/"
-  "https://theverge.com/"
-  "https://wired.com/"
-  "https://arstechnica.com/"
-  "https://bbc.com/news/"
-  "https://nytimes.com/"
-  "https://reuters.com/technology"
-  "https://bloomberg.com/technology"
-  "https://theguardian.com/technology"
-  "https://cnbc.com/technology"
+# --- Security & dev-ops blogs ------------------------------------
+https://cloud.google.com/blog/products/identity-security
+https://security.googleblog.com/
+https://aws.amazon.com/security/
+https://securitylab.github.com/
+https://unit42.paloaltonetworks.com/
+https://blog.cloudflare.com/tag/security/
+https://hackerone.com/blog
+https://portswigger.net/daily-swig
+https://securitytrails.com/blog
+https://thehackernews.com/
 
-  # ── E-commerce & Product Pages ───
-  "https://amazon.com/"
-  "https://etsy.com/"
-  "https://shopify.com/"
-  "https://ebay.com/"
-  "https://nike.com/"
-  "https://adidas.com/"
-  "https://bestbuy.com/"
-  "https://walmart.com/"
-  "https://target.com/"
-  "https://costco.com/"
-  "https://homedepot.com/"
+# --- Regional / language-specific news ---------------------------
+https://dw.com/
+https://rtve.es/noticias/
+https://folha.uol.com.br/
+https://sueddeutsche.de/
+https://zeit.de/
+https://elpuntavui.cat/
+https://lenta.ru/
+https://pravda.com.ua/
+https://haaretz.co.il/
+https://trtworld.com/
+https://chinadaily.com.cn/
+https://thehindu.com/
+https://straitstimes.com/
+https://japantimes.co.jp/
+https://theglobeandmail.com/
+https://lequipe.fr/
+https://marca.com/
+https://bild.de/
+https://eldiario.es/
+https://koreatimes.co.kr/
 
-  # ── Forums / Q&A ──────────────────
-  "https://stackoverflow.com/questions"
-  "https://news.ycombinator.com/"
-  "https://reddit.com/r/programming/"
+# --- Universities / research portals -----------------------------
+https://princeton.edu/
+https://yale.edu/
+https://columbia.edu/
+https://u-tokyo.ac.jp/
+https://umich.edu/
+https://univie.ac.at/
+https://u-tokyo.ac.jp/
+https://karolinska.se/
+https://helsinki.fi/
+https://uibk.ac.at/
+https://uio.no/
+https://unimelb.edu.au/
+https://uct.ac.za/
+https://usu.edu/
+https://tudelft.nl/en/
+https://rwth-aachen.de/
+https://epfl.ch/
+https://epfl.ch/research/discover/
+https://sissa.it/
+https://lmu.de/en/
+https://oxfordjournals.org/
+https://nature.com/nature/
+https://sciencemag.org/
+https://plos.org/
+https://biorxiv.org/
+https://medrxiv.org/
+https://jstor.org/
 
-  # ── Open-Source READMEs ───────────
-  "https://github.com/facebook/react"
-  "https://github.com/vuejs/vue"
-  "https://github.com/tensorflow/tensorflow"
-  "https://github.com/kubernetes/kubernetes"
-  "https://github.com/redis/redis"
+# --- Government / open data / NGOs -------------------------------
+https://ec.europa.eu/info/index_en
+https://un.org/en/
+https://ilo.org/global/lang--en/index.htm
+https://oecd.org/
+https://worldbank.org/en/home
+https://imf.org/en/Home
+https://data.unicef.org/
+https://who.int/data
+https://data.humdata.org/
+https://ourworldindata.org/
+https://data.gov.uk/
+https://data.gov.au/
+https://data.gov.br/
+https://datos.gob.es/
+https://open.canada.ca/en
+https://opendata.paris.fr/
+https://data.undp.org/
+https://datahub.io/
+https://opencorporates.com/
 
-  # ── Vertical Niches ───────────────
-  "https://healthline.com/"
-  "https://webmd.com/"
-  "https://khanacademy.org/"
-  "https://britannica.com/"
-  "https://npr.org/"
-  "https://nationalgeographic.com/"
+# --- Design / UX / media blogs -----------------------------------
+https://uxdesign.cc/
+https://dribbble.com/stories
+https://adobe.io/
+https://figma.com/blog/
+https://material.io/blog
+https://a16z.com/
+https://seths.blog/
+https://stratechery.com/
+https://ben-evans.com/
+https://noahpinion.blog/
+https://every.to/
+https://newsletter.pragmaticengineer.com/
+https://pointer.io/
+https://statuspage.io/blog
+https://openai.com/research
+https://deepmind.com/blog
+https://anthropic.com/index
+https://stability.ai/blog
+https://mistral.ai/blog
 
-  # ── Non-English Samples ───────────
-  "https://lemonde.fr/"
-  "https://spiegel.de/"
-  "https://elpais.com/"
-  "https://asahi.com/"
-  "https://handelsblatt.com/"
-)
+# --- Misc high-content portals -----------------------------------
+https://archive.org/details/texts
+https://wikibooks.org/
+https://wiktionary.org/
+https://mathworld.wolfram.com/
+https://pdfdrive.com/
+https://ted.com/talks
+https://coursera.org/courses
+https://edx.org/
+https://futurelearn.com/
+https://ocw.mit.edu/
+https://openstax.org/
+https://cs50.harvard.edu/ai/
+https://fivethirtyeight.com/
+https://kaggle.com/datasets
+https://paperswithcode.com/
+https://phoronix.com/
+https://techmeme.com/
+https://producthunt.com/alternatives
+https://lobste.rs/
+https://rsshub.app/
+#------------------------------------------------------------------
+# ── Search / SEO industry ───────────────────────────────────────────
+https://ahrefs.com/blog
+https://moz.com/blog
+https://semrush.com/blog
+https://backlinko.com/blog
+https://searchengineland.com/
+https://searchenginejournal.com/
+https://searchenginewatch.com/
+https://seroundtable.com/
+https://yoast.com/seo-blog/
+https://neilpatel.com/blog/
+https://sparktoro.com/blog
+https://growthbarseo.com/blog/
+https://surferseo.com/blog/
+https://cognitiveseo.com/blog/
+https://seo.com/blog
+https://seobility.net/en/blog/
+https://screamingfrog.co.uk/blog/
+https://seranking.com/blog/
+https://rankmath.com/blog/
+https://onely.com/blog/
+https://builtvisible.com/blog/
+https://gotchseo.com/blog/
+https://webfx.com/blog/
+https://webflow.com/blog
+https://brightedge.com/resources/webinars
+https://contentkingapp.com/blog/
+https://clickflow.com/blog/
+https://lighthouse.google.com/
+https://developers.google.com/search/blog
+https://openlinkprofiler.org/blog
 
-# Push all URLs in one go
-redis-cli RPUSH discover:start_urls "${urls[@]}"
+# ── Content-marketing / copywriting ────────────────────────────────
+https://contentmarketinginstitute.com/blog/
+https://copyblogger.com/blog/
+https://animals.co/blog/
+https://storychief.io/blog
+https://gumroad.com/blog
+https://hubstaff.com/blog
+https://coSchedule.com/blog/
+https://buffer.com/resources
+https://later.com/blog/
+https://sproutsocial.com/insights/
+https://hootsuite.com/blog
+https://mailchimp.com/resources/
+https://getresponse.com/blog
+https://activecampaign.com/blog
+https://convertkit.com/blog
+https://intercom.com/blog
+https://slack.com/intl/en-gb/blog
+https://zapier.com/blog
+https://harpersbazaar.com/uk/
+https://conversionxl.com/blog/
+https://unbounce.com/blog/
+https://hotjar.com/blog/
+https://crazyegg.com/blog/
+https://optimizely.com/insights/
+https://vwo.com/blog/
+https://drift.com/blog/
+https://gong.io/blog/
+https://klaviyo.com/blog
+https://ahoyconnect.com/blog
+https://ahrefs.com/academy
 
-echo "Seeded discover:start_urls with ${#urls[@]} URLs"
+# ── E-commerce / product marketing ─────────────────────────────────
+https://bigcommerce.com/blog/
+https://woo.com/posts/
+https://woocommerce.com/blog/
+https://magento.com/blog
+https://shopify.com/partners/blog
+https://g2.com/articles
+https://capterra.com/resources
+https://trustpilot.com/business/resources
+https://sleeknote.com/blog
+https://privy.com/blog
+https://omnisend.com/blog
+https://yotpo.com/blog/
+https://refersion.com/blog
+https://shipbob.com/blog/
+https://fastspring.com/blog/
+https://stripe.com/blog
+https://paypal.com/stories
+https://squareup.com/us/en/townsquare
+https://aftership.com/blog
+https://parcelmonitor.com/blog
+https://kantar.com/insights
+https://emarketer.com/
+https://thinkwithgoogle.com/intl/en-gb/
+https://intel.com/content/www/us/en/newsroom.html
+
+# ── SaaS engineering / growth case studies ─────────────────────────
+https://segment.com/blog
+https://datadog.com/blog/
+https://snowflake.com/blog/
+https://databricks.com/blog
+https://confluent.io/blog/
+https://konghq.com/blog/
+https://snyk.io/blog/
+https://newrelic.com/blog
+https://statuspage.io/blog
+https://pagerduty.com/blog
+https://launchdarkly.com/blog
+https://cloudinary.com/blog
+https://auth0.com/blog
+https://okta.com/blog
+https://1password.com/blog
+https://algolia.com/blog
+https://fastly.com/blog
+https://vercel.com/blog
+https://netlify.com/blog/
+https://render.com/blog
+https://supaglue.com/blog
+https://temporal.io/blog
+https://hashnode.com/
+https://devblogs.microsoft.com/
+https://medium.com/google-cloud
+https://medium.com/airbnb-engineering
+https://elastic.co/blog
+https://grafana.com/blog
+https://timescale.com/blog/
+https://planet.postgresql.org/
+
+# ── Analytics / data science ───────────────────────────────────────
+https://mode.com/blog
+https://metabase.com/blog/
+https://superset.apache.org/blog/
+https://tableau.com/about/blog
+https://powerbi.microsoft.com/en-us/blog/
+https://looker.com/blog
+https://mixpanel.com/blog/
+https://amplitude.com/blog
+https://segment.com/academy
+https://analytics.googleblog.com/
+https://developers.facebook.com/blog
+https://twitter.github.io/engineering/
+https://airbyte.com/blog
+https://dagster.io/blog
+https://mlflow.org/blog/
+https://weightsandbiases.com/blog
+https://huggingface.co/blog
+https://r-bloggers.com/
+https://towardsdatascience.com/tagged/data-science
+https://kdnuggets.com/
+
+# ── Business / entrepreneurship / growth ───────────────────────────
+https://a16z.com/
+https://openviewpartners.com/blog/
+https://sequoiacap.com/article/
+https://greylock.com/our-insights/
+https://ycombinator.com/blog/
+https://firstround.com/review/
+https://stripe.com/en-gb-at/newsroom
+https://medium.com/forbes
+https://inc.com/
+https://entrepreneur.com/
+https://fastcompany.com/
+https://hbr.org/
+https://mckinsey.com/featured-insights
+https://bcg.com/publications
+https://bain.com/insights
+https://gartner.com/en/newsroom
+https://future.com/
+https://every.to/
+https://stephsmith.io/posts/
+https://substack.com/featured
+https://newsletter.pragmaticengineer.com/
+https://marginalrevolution.com/
+https://noahpinion.blog/
+https://stratechery.com/
+https://ben-evans.com/
+
+# ── Regional newspapers / magazines (new) ──────────────────────────
+https://latimes.com/
+https://chicagotribune.com/
+https://bostonglobe.com/
+https://seattletimes.com/
+https://irishtimes.com/
+https://thetimes.co.uk/
+https://dailymail.co.uk/
+https://theatlantic.com/
+https://newyorker.com/
+https://rollingstone.com/
+https://variety.com/
+https://hollywoodreporter.com/
+https://skynews.com/
+https://itv.com/news
+https://france24.com/
+https://derstandard.at/
+https://zeenews.india.com/
+https://thetimes.co.za/
+https://nzherald.co.nz/
+https://thejakartapost.com/
+https://bangkokpost.com/
+https://smh.com.au/
+https://caixin.com/
+https://chinadailyhk.com/
+https://globaltimes.cn/
+https://morningstar.co.jp/
+https://gulfnews.com/
+https://ansa.it/
+https://elcomercio.pe/
+https://clarin.com/
+https://kommersant.ru/
+
+# ── Education / MOOCs / reference (extras) ────────────────────────
+https://academictorrents.com/
+https://scholar.googleusercontent.com/
+https://citeseerx.ist.psu.edu/
+https://journals.plos.org/
+https://royalsociety.org/journals/
+https://ieeexplore.ieee.org/
+https://university.eclipse.org/
+https://coursera.org/articles
+https://udacity.com/blog/
+https://edx.org/course
+https://futurelearn.com/info/blog
+https://classcentral.com/report/
+https://openstax.org/subjects
+https://encyclopedia.com/
+https://infoworld.com/
+https://howtogeek.com/
+https://wikihow.com/
+https://stackexchange.com/sites
+https://openlibra.com/en
+https://projectgutenberg.org/
+https://openstax.org/details/books
+} | redis-cli --pipe
+
+echo "Seeded $(redis-cli LLEN $REDIS_KEY) URLs into $REDIS_KEY"
