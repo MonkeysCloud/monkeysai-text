@@ -14,6 +14,15 @@ crawl-big:
 	  -s SCHEDULER_IDLE_BEFORE_CLOSE=600 \
 	  -o ../crawl/run_$(shell date +%F_%H%M).jl
 
+seed:
+	./scripts/seed_discover.sh
+
+reset-crawl:
+	rm -rf data_crawl/.check
+	redis-cli DEL discover:dupefilter discover:requests discover:start_urls
+	./scripts/seed_discover.sh
+	make crawl-big
+
 # ───────────────────────────────────────────────────────────────
 # Convert latest JL to Parquet for training
 parquet:
