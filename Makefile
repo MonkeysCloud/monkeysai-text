@@ -2,16 +2,16 @@
 
 # ───────────────────────────────────────────────────────────────
 # 48‑hour distributed crawl with tuned networking / retries
+
 crawl-big:
-	# Continuous distributed crawl (no hard timeout, unlimited items)
 	cd data_crawl && \
 	poetry run scrapy crawl discover \
 	  -s DOWNLOAD_TIMEOUT=60 \
 	  -s RETRY_TIMES=2 \
 	  -s JOBDIR=.check \
 	  -L INFO \
-	  -s CLOSESPIDER_ENABLED=False \
-	  -o ../crawl/run_$(shell date +%F_%H%M).jl/run_$(shell date +%F_%H%M).jl
+	  -s CLOSESPIDER_TIMEOUT=172800 \
+	  -o ../crawl/run_$(shell date +%F_%H%M).jl
 
 # ───────────────────────────────────────────────────────────────
 # Convert latest JL to Parquet for training
