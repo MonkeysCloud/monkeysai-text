@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Seed Redis list “discover:start_urls” with a large, diverse corpus.
-# -------------------------------------------------------------------
+# Seed Redis list “discover:start_urls” with a large, diverse corpus
+# Usage: ./scripts/seed_discover.sh  [redis-url]
+#        ./scripts/seed_discover.sh  redis://127.0.0.1:6379/1
+# ------------------------------------------------------------------
+
+set -euo pipefail
+REDIS_URL="${1:-redis://localhost:6379}"
 REDIS_KEY="discover:start_urls"
 
-# Bulk-push via redis-cli --pipe  (fast & atomic)
-{
-  echo "*$(grep -cv '^#' "$0")"      # array length for RPUSH
-  echo "\$4"                         # "RPUSH"
-  echo "RPUSH"
-  echo "\$${#REDIS_KEY}"
-  echo "$REDIS_KEY"
+# ── 1. URL list ────────────────────────────────────────────────────
+urls=(
 
 #──────────────────────────────────────────────
 #  ▼▼  START-URL LIST  (remove or add freely) ▼▼
@@ -613,6 +613,14 @@ https://stackexchange.com/sites
 https://openlibra.com/en
 https://projectgutenberg.org/
 https://openstax.org/details/books
-} | redis-cli --pipe
+)
+# ── 2. Push in one shot ───────────────────────────────────────────
+command -v redis-cli >/dev/null 2>&1 || {
+  echo "❌ redis-cli not found in \$PATH" >&2; exit 1; }
 
-echo "Seeded $(redis-cli LLEN $REDIS_KEY) URLs into $REDIS_KEY"
+if redis-cli -u "$REDIS_URL" RPUSH "$REDIS_KEY" "${urls[@]}" >/dev/null; then
+  echo "Seeded $(redis-cli -u "$REDIS_URL" LLEN "$REDIS_KEY") URLs into $REDIS_KEY"
+else
+  echo "❌ Failed to push URLs to Redis" >&2
+  exit 1
+fi
