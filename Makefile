@@ -11,6 +11,7 @@ crawl-big:
 	  -s JOBDIR=.check \
 	  -L INFO \
 	  -s CLOSESPIDER_TIMEOUT=172800 \
+	  -s SCHEDULER_IDLE_BEFORE_CLOSE=600 \
 	  -o ../crawl/run_$(shell date +%F_%H%M).jl
 
 # ───────────────────────────────────────────────────────────────
