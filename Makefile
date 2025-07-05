@@ -27,8 +27,12 @@ reset-crawl:
 # Convert latest JL to Parquet for training
 parquet:
 	mkdir -p services/text/data
-	poetry run python scripts/jl_to_parquet.py \
-	  $(shell ls crawl/run_*.jl | tail -1)
+	@latest="$$(ls crawl/run_*.jl | sort | tail -1)" ; \
+	$if [ -z "$$latest" ] ; then \
+      echo "❌ no crawl/run_*.jl files found" >&2 ; exit 1 ; \
+    fi ; \
+    echo "⏳ converting $$latest → Parquet…" ; \
+    poetry run python scripts/jl_to_parquet.py "$$latest"
 
 # ───────────────────────────────────────────────────────────────
 # Train language‑model on snapshot.parquet
