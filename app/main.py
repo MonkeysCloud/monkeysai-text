@@ -1,29 +1,52 @@
-import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"  # quiet HF warning in forks
+"""monkeysai_text/app/main.py
+──────────────────────────────────────────────────────────────────
+FastAPI entrypoint serving three families of endpoints:
+
+  • `/generate`          – blocking text generation from your Transformer.
+  • `/generate-stream`   – token-level Server-Sent Events (SSE) from the
+                            same Transformer.
+  • `/chat`              – blocking RAG answer (Mixtral + KB/Web).
+  • `/chat-stream`       – **NEW** SSE endpoint that streams the agent’s
+                            reasoning events in real time: thoughts, tool
+                            calls, answer tokens, and final sources.
+
+No runtime behaviour of the existing Transformer endpoints changed; we only
+added the streaming RAG path and bumped the API version to 0.3.0.
+"""
+from __future__ import annotations
 
 import glob
 import json
+import os
 import re
+from pathlib import Path
+from typing import AsyncGenerator, List
+
 import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 from tokenizers import ByteLevelBPETokenizer
 
-# -------------------------------------------------------------------
-# Helpers
-# -------------------------------------------------------------------
+from .monkeysai_agent import Agent
+from .models import TransformerConfig, TransformerLanguageModel
+
+# ────────────────────────────────────────────────────────────────
+# Environment tweaks & helpers
+# ────────────────────────────────────────────────────────────────
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")  # quiet HF warning
+
 CTRL_CLEAN = re.compile(r"[\x00-\x1F]+")  # control chars 0–31
 
 def clean_text(txt: str) -> str:
+    """Remove control characters so SSE stays well-formed."""
     return CTRL_CLEAN.sub("", txt)
 
-# -------------------------------------------------------------------
-# Load tokenizer & checkpoint
-# -------------------------------------------------------------------
+# ────────────────────────────────────────────────────────────────
+# Load tokenizer & Transformer checkpoint (unchanged logic)
+# ────────────────────────────────────────────────────────────────
 TOKENIZER_VOCAB = "services/text/data/tokenizer-vocab.json"
 TOKENIZER_MERGE = "services/text/data/tokenizer-merges.txt"
-
 if not (os.path.isfile(TOKENIZER_VOCAB) and os.path.isfile(TOKENIZER_MERGE)):
     raise RuntimeError("Tokenizer files not found; run scripts/train_tokenizer.py first.")
 
@@ -36,9 +59,7 @@ if not os.path.isfile(ckpt_path):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 state_dict = torch.load(ckpt_path, map_location=device)
 ckpt_vocab_size, d_model = state_dict["token_emb.weight"].shape
-_, max_seq_len, _         = state_dict["pos_enc.pe"].shape
-
-from .models import TransformerConfig, TransformerLanguageModel
+_, max_seq_len, _ = state_dict["pos_enc.pe"].shape
 
 cfg = TransformerConfig(
     vocab_size=ckpt_vocab_size,
@@ -54,11 +75,12 @@ model = TransformerLanguageModel(cfg).to(device)
 model.load_state_dict(state_dict)
 model.eval()
 
-# -------------------------------------------------------------------
-# FastAPI
-# -------------------------------------------------------------------
-app = FastAPI(title="MonkeysAI-Text (BPE)", version="0.1.0")
+# ────────────────────────────────────────────────────────────────
+# FastAPI application & schemas
+# ────────────────────────────────────────────────────────────────
+app = FastAPI(title="MonkeysAI-Text", version="0.3.0")
 
+# -------- Transformer generation endpoints ---------------------
 class TextReq(BaseModel):
     text: str
     max_tokens: int = Field(32, ge=1, le=256)
@@ -69,9 +91,6 @@ class TextReq(BaseModel):
 class TextResp(BaseModel):
     text: str
 
-# -------------------------------------------------------------------
-# /generate — blocking response
-# -------------------------------------------------------------------
 @app.post("/generate", response_model=TextResp)
 def generate(req: TextReq):
     try:
@@ -94,16 +113,13 @@ def generate(req: TextReq):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-# -------------------------------------------------------------------
-# /generate-stream — SSE streaming
-# -------------------------------------------------------------------
 @app.post("/generate-stream")
 async def generate_stream(req: TextReq):
-    def event_source():
+    def event_source() -> AsyncGenerator[str, None]:
         enc = tokenizer.encode(req.text)
         ids = [cfg.bos_token_id] + enc.ids
         inp = torch.tensor([ids], dtype=torch.long, device=device)
-        generated = []
+        generated: list[int] = []
         model.eval()
         with torch.no_grad():
             for _ in range(req.max_tokens):
@@ -120,4 +136,35 @@ async def generate_stream(req: TextReq):
                     break
                 inp = torch.cat([inp, torch.tensor([[next_id]], device=device)], 1)
         yield f"data: {json.dumps({'text': clean_text(tokenizer.decode(generated))})}\n\n"
+    return StreamingResponse(event_source(), media_type="text/event-stream")
+
+# -------- Retrieval-Augmented-Generation endpoints -------------
+agent = Agent()
+
+class ChatReq(BaseModel):
+    prompt: str = Field(..., description="User question or message.")
+
+class ChatResp(BaseModel):
+    answer: str
+    sources: List[str] | None = None
+
+@app.post("/chat", response_model=ChatResp)
+async def chat(req: ChatReq):
+    try:
+        answer, srcs = await agent.chat(req.prompt)
+        return ChatResp(answer=answer, sources=srcs or None)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+# -------- Streaming RAG (live reasoning) -----------------------
+@app.post("/chat-stream")
+async def chat_stream(req: ChatReq):
+    async def event_source() -> AsyncGenerator[str, None]:
+        try:
+            async for ev in agent.chat_events(req.prompt):
+                # Each ev is a small dict: {type: 'thought'|'tool'|'token'|'done', ...}
+                yield f"data: {json.dumps(ev)}\n\n"
+        except Exception as exc:
+            # Surface errors in-stream so client knows something went wrong.
+            yield f"data: {json.dumps({'type':'error','detail':str(exc)})}\n\n"
     return StreamingResponse(event_source(), media_type="text/event-stream")

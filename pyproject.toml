@@ -11,8 +11,12 @@ python  = "^3.11"
 fastapi = "^0.111"
 uvicorn = { extras = ["standard"], version = "^0.30" }
 torch   = "^2.7"
+sentence-transformers = "^2.7"
+qdrant-client      = "^1.14"
+httpx              = "^0.28"
 scrapy-redis = "^0.9.1"
 pytz = "^2025.2"
+llama-cpp-python = "^0.3.10"
 
 [tool.poetry.group.crawl.dependencies]
 scrapy            = "^2.11"
