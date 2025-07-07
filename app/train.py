@@ -58,7 +58,7 @@ def main() -> None:
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, betas=(0.9, 0.95), weight_decay=0.01)
     total_steps = TOTAL_EPOCHS * math.ceil(len(ds) / BATCH_SIZE / GRAD_ACCUM_STEPS)
     scheduler   = CosineAnnealingLR(optimizer, T_max=total_steps)
-    scaler      = GradScaler(device_type="cuda", enabled=(device=="cuda"))
+    scaler      = GradScaler(enabled=(device=="cuda"))
     loss_fn     = torch.nn.CrossEntropyLoss(ignore_index=cfg.pad_token_id)
 
     # 5) Training loop
