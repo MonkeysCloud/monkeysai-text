@@ -12,7 +12,7 @@ import time
 import torch
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 
 from .models import TransformerConfig, TransformerLanguageModel
 from .dataset import TextDataset
