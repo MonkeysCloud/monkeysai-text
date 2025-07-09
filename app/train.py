@@ -29,8 +29,8 @@ WARMUP_STEPS       = 1_000       # linear warm-up before cosine decay
 CHECKPOINT_DIR     = "checkpoints"
 
 # Early-stopping
-EARLY_STOP_PATIENCE = 2          # epochs to wait
-MIN_DELTA           = 0.005      # 0.5 % relative improvement
+EARLY_STOP_PATIENCE = 3          # epochs to wait
+MIN_DELTA           = 0.02      # 0.5 % relative improvement
 
 
 def main() -> None:
@@ -72,7 +72,7 @@ def main() -> None:
                                   betas=(0.9, 0.95), weight_decay=0.01)
     total_steps = TOTAL_EPOCHS * math.ceil(len(train_ds)
                                            / BATCH_SIZE / GRAD_ACCUM_STEPS)
-    scheduler   = CosineAnnealingLR(optimizer, T_max=total_steps)
+    scheduler   = CosineAnnealingLR(optimizer, T_max=total_steps * 2)
     scaler      = GradScaler(enabled=(device == "cuda"))
     loss_fn     = torch.nn.CrossEntropyLoss(ignore_index=cfg.pad_token_id)
 
@@ -92,7 +92,7 @@ def main() -> None:
 
     # 5) Training loop with early-stopping
     step           = 0
-    best_val       = float("inf")
+    best_val       = None
     epochs_no_imp  = 0
 
     for epoch in range(1, TOTAL_EPOCHS + 1):
@@ -160,8 +160,8 @@ def main() -> None:
             sample_ids = sample_ids[: sample_ids.index(cfg.eos_token_id) + 1]
         print("Sample:", tokenizer.decode(sample_ids[1:]))
 
-        # 8) Early-stopping check
-        if best_val - val_loss > MIN_DELTA * best_val:
+        # 8) Early-stopping check (absolute Δ)
+        if best_val is None or (best_val - val_loss) > MIN_DELTA:
             best_val = val_loss
             epochs_no_imp = 0
         else:
