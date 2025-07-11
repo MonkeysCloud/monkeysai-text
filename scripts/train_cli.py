@@ -13,8 +13,13 @@ for lr in 3e-4 4e-4 5e-4; do
 done
 """
 import importlib
-import argparse
+import sys
 from pathlib import Path
+# ── ensure repo-root is on PYTHONPATH ──────────────────────────
+ROOT = Path(__file__).resolve().parents[1]   # .../monkeysai-text
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+import argparse
 import json
 
 train_mod = importlib.import_module("app.train")  # dynamic import keeps package layout intact
