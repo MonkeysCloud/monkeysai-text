@@ -48,6 +48,8 @@ def sample_ids(
     top_k: int = 40,
     top_p: float = 0.9,
     device: str = "cpu",
+    repetition_penalty: float = 1.2,       # 🆕  >1.0 → discourage repeats
+    max_run: int = 3,                      # 🆕  never allow X same tokens in a row
 ) -> list[int]:
     """
     Deterministic wrapper around the model’s generate logic that **masks <pad>**
@@ -59,14 +61,26 @@ def sample_ids(
     inp = torch.tensor([ids], dtype=torch.long, device=device)
 
     model.eval()
+    generated: list[int] = []
     with torch.no_grad():
         for _ in range(max_new):
             logits = model(inp)[:, -1, :]
 
-            # 1️⃣ mask pad
+            # ① mask pad
             logits[0, cfg.pad_token_id] = -float("inf")
 
-            # 2️⃣ temperature → probs
+            # ② **repetition penalty** (à la GPT-NeoX)
+            if generated:
+                uniq = torch.unique(torch.tensor(generated, device=device))
+                logits[0, uniq] = logits[0, uniq] / repetition_penalty
+
+            # ③ stop identical run-lengths > max_run
+            if len(generated) >= max_run - 1 and all(
+                t == generated[-1] for t in generated[-(max_run - 1) :]
+            ):
+                logits[0, generated[-1]] = -float("inf")
+
+            # ④ temperature → probs
             probs = torch.softmax(logits / temperature, -1).squeeze(0)
 
             # 3️⃣ top-k
@@ -101,6 +115,7 @@ def sample_ids(
             assert torch.isfinite(probs).all(), "probs still bad!"
 
             next_id = torch.multinomial(probs, 1).item()
+            generated.append(next_id)
             ids.append(next_id)
 
             if next_id == cfg.eos_token_id:
