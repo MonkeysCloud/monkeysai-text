@@ -24,7 +24,7 @@ DEFAULTS: dict[str, object] = dict(
     lr               = 3e-4,
     checkpoint_dir   = "checkpoints",
     patience         = 8,
-    min_delta        = 0.001,      # tiny absolute drop
+    min_delta        = 0.001,
     val_split        = 0.02,
     workers          = 8,
     seed             = 42,
@@ -36,6 +36,67 @@ def _set_seeds(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+# ──────────────────────────── sampling ─────────────────────────
+def sample_ids(
+    model: TransformerLanguageModel,
+    tokenizer,
+    cfg: TransformerConfig,
+    prompt: str,
+    max_new: int = 32,
+    temperature: float = 0.6,
+    top_k: int = 40,
+    top_p: float = 0.9,
+    device: str = "cpu",
+) -> list[int]:
+    """
+    Deterministic wrapper around the model’s generate logic that **masks <pad>**
+    and renormalises after top-k / nucleus filtering, so we never sample blanks.
+    """
+
+    # ---- encode + priming ----
+    ids = [cfg.bos_token_id] + tokenizer.encode(prompt).ids
+    inp = torch.tensor([ids], dtype=torch.long, device=device)
+
+    model.eval()
+    with torch.no_grad():
+        for _ in range(max_new):
+            logits = model(inp)[:, -1, :]
+
+            # 1️⃣  stop the <pad> token from hijacking sampling
+            logits[0, cfg.pad_token_id] = -float("inf")
+
+            # 2️⃣  temperature
+            logits = logits / temperature
+            probs  = torch.softmax(logits, -1).squeeze(0)          # (V,)
+
+            # 3️⃣  top-k filter
+            if top_k > 0:
+                top_vals, top_idx = torch.topk(probs, top_k)
+                mask = torch.zeros_like(probs, dtype=torch.bool)
+                mask[top_idx] = True
+                probs = probs.masked_fill(~mask, 0)
+
+            # 4️⃣  nucleus (top-p) filter
+            if top_p < 1.0:
+                sorted_probs, sorted_idx = torch.sort(probs, descending=True)
+                cum = torch.cumsum(sorted_probs, 0)
+                cutoff = cum > top_p
+                if cutoff.any():
+                    first = (cutoff.nonzero(as_tuple=False)[0]).item()
+                    probs[sorted_idx[first:]] = 0
+
+            # 5️⃣  **renormalise** so torch.multinomial sees a proper distribution
+            probs = probs / probs.sum()
+
+            next_id = torch.multinomial(probs, 1).item()
+            ids.append(next_id)
+
+            if next_id == cfg.eos_token_id:
+                break
+            inp = torch.cat([inp, torch.tensor([[next_id]], device=device)], 1)
+
+    return ids
 
 # ───────────────────────── train() ─────────────────────────────
 def train(**cfg_args):
@@ -76,8 +137,8 @@ def train(**cfg_args):
     total_steps = hp["max_epochs"] * math.ceil(len(train_ds)/hp["batch_size"]/hp["grad_accum_steps"])
     sched = OneCycleLR(
         optim, max_lr=hp["lr"], total_steps=total_steps,
-        pct_start=0.15,  anneal_strategy="cos",
-        div_factor=10,   final_div_factor=1e4
+        pct_start=0.15, anneal_strategy="cos",
+        div_factor=10, final_div_factor=1e4
     )
     scaler  = GradScaler(enabled=device=="cuda")
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=cfg.pad_token_id)
@@ -122,19 +183,18 @@ def train(**cfg_args):
         Path(hp["checkpoint_dir"]).mkdir(exist_ok=True)
         torch.save(model.state_dict(), f"{hp['checkpoint_dir']}/epoch{epoch}.pt")
 
-        # sample
+        # ---- qualitative sample (now uses safe sampler) ----
         prompt = ("Write a 120-word, SEO-optimised introduction paragraph for a web-"
                   "agency landing page about MonkeysCloud—our managed DevOps platform. "
                   "Include 'managed DevOps platform' once and 'scalable web hosting' once.")
-        ids = [cfg.bos_token_id]+tokenizer.encode(prompt).ids
-        model.eval()
-        with torch.no_grad():
-            out = model.generate(torch.tensor([ids],device=device), max_new=32,
-                                 temperature=0.6, top_k=40, top_p=0.9)[0].tolist()
-        if cfg.eos_token_id in out: out = out[:out.index(cfg.eos_token_id)+1]
-        print("Sample:", tokenizer.decode(out[1:]))
+        ids = sample_ids(model, tokenizer, cfg, prompt,
+                         max_new=32, temperature=0.6, top_k=40, top_p=0.9,
+                         device=device)
+        if cfg.eos_token_id in ids:
+            ids = ids[:ids.index(cfg.eos_token_id)+1]
+        print("Sample:", tokenizer.decode(ids[1:]))
 
-        # early-stop or warm-restart
+        # ---- early-stop / warm-restart ----
         if best is None or best - v > hp["min_delta"]:
             best, flat = v, 0
             print(f"✅  Val improved → {v:.3f}")
@@ -151,8 +211,10 @@ def train(**cfg_args):
 # ── CLI shim ───────────────────────────────────────────────────
 if __name__ == "__main__":
     arg = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    for k,v in DEFAULTS.items(): arg.add_argument(f"--{k.replace('_','-')}", type=type(v), default=v)
+    for k,v in DEFAULTS.items():
+        arg.add_argument(f"--{k.replace('_','-')}", type=type(v), default=v)
     arg.add_argument("--cfg-json", type=str, help="Path to JSON overrides")
     ns = vars(arg.parse_args())
-    if ns.get("cfg_json"): ns.update(json.loads(Path(ns.pop("cfg_json")).read_text()))
+    if ns.get("cfg_json"):
+        ns.update(json.loads(Path(ns.pop("cfg_json")).read_text()))
     train(**ns)
