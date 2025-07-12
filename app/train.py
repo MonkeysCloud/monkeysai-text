@@ -80,9 +80,14 @@ def sample_ids(
             if top_p < 1.0:
                 sorted_p, sorted_idx = torch.sort(probs, descending=True)
                 keep = torch.cumsum(sorted_p, 0) <= top_p
-                # always keep at least one token
-                keep[0] = True
+                keep[0] = True                      # always keep ≥ 1
                 probs = probs.masked_fill(~keep[sorted_idx], 0)
+
+            # 🔒 ensure ≥ 2 options survive; otherwise fall back to full soft-max
+            if (probs > 0).sum() < 2:
+                probs = torch.softmax(logits.squeeze(0) / temperature, -1)
+                probs[cfg.pad_token_id] = 0
+                probs = probs / probs.sum()
 
             # 5️⃣ SAFE renormalisation
             mass = probs.sum()
@@ -193,9 +198,20 @@ def train(**cfg_args):
         prompt = ("Write a 120-word, SEO-optimised introduction paragraph for a web-"
                   "agency landing page about MonkeysCloud—our managed DevOps platform. "
                   "Include 'managed DevOps platform' once and 'scalable web hosting' once.")
-        ids = sample_ids(model, tokenizer, cfg, prompt,
-                         max_new=32, temperature=0.6, top_k=40, top_p=0.9,
-                         device=device)
+        # ---- qualitative sample (adaptive decoding) ----
+        if epoch < 4:            # loosen constraints until the model learns
+            sample_temp, sample_k, sample_p = 1.2, 0, 1.0
+        else:                    # production settings
+            sample_temp, sample_k, sample_p = 0.6, 40, 0.9
+
+        ids = sample_ids(
+            model, tokenizer, cfg, prompt,
+            max_new=32,
+            temperature=sample_temp,
+            top_k=sample_k,
+            top_p=sample_p,
+            device=device,
+        )
         if cfg.eos_token_id in ids:
             ids = ids[:ids.index(cfg.eos_token_id)+1]
         print("Sample:", tokenizer.decode(ids[1:]))
