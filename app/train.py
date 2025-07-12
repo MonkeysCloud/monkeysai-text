@@ -63,31 +63,37 @@ def sample_ids(
         for _ in range(max_new):
             logits = model(inp)[:, -1, :]
 
-            # 1️⃣  stop the <pad> token from hijacking sampling
+            # 1️⃣ mask pad
             logits[0, cfg.pad_token_id] = -float("inf")
 
-            # 2️⃣  temperature
-            logits = logits / temperature
-            probs  = torch.softmax(logits, -1).squeeze(0)          # (V,)
+            # 2️⃣ temperature → probs
+            probs = torch.softmax(logits / temperature, -1).squeeze(0)
 
-            # 3️⃣  top-k filter
+            # 3️⃣ top-k
             if top_k > 0:
-                top_vals, top_idx = torch.topk(probs, top_k)
+                top_vals, top_idx = torch.topk(probs, min(top_k, probs.size(0)))
                 mask = torch.zeros_like(probs, dtype=torch.bool)
                 mask[top_idx] = True
                 probs = probs.masked_fill(~mask, 0)
 
-            # 4️⃣  nucleus (top-p) filter
+            # 4️⃣ top-p
             if top_p < 1.0:
-                sorted_probs, sorted_idx = torch.sort(probs, descending=True)
-                cum = torch.cumsum(sorted_probs, 0)
-                cutoff = cum > top_p
-                if cutoff.any():
-                    first = (cutoff.nonzero(as_tuple=False)[0]).item()
-                    probs[sorted_idx[first:]] = 0
+                sorted_p, sorted_idx = torch.sort(probs, descending=True)
+                keep = torch.cumsum(sorted_p, 0) <= top_p
+                # always keep at least one token
+                keep[0] = True
+                probs = probs.masked_fill(~keep[sorted_idx], 0)
 
-            # 5️⃣  **renormalise** so torch.multinomial sees a proper distribution
-            probs = probs / probs.sum()
+            # 5️⃣ SAFE renormalisation
+            mass = probs.sum()
+            if not torch.isfinite(mass) or mass <= 0:
+                # fall back to *unfiltered* distribution (pad still masked)
+                probs = torch.softmax(logits.squeeze(0), -1)
+                probs[cfg.pad_token_id] = 0
+                probs = probs / probs.sum()
+
+            # final assert (debug only – remove for prod)
+            assert torch.isfinite(probs).all(), "probs still bad!"
 
             next_id = torch.multinomial(probs, 1).item()
             ids.append(next_id)
